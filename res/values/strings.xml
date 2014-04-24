@@ -4,5 +4,6 @@
     <string name="app_name">Spot It</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-
+	<string name="login_go">Go</string>
 </resources>
+
