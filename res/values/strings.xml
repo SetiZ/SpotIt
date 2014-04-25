@@ -5,5 +5,8 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 	<string name="login_go">Go</string>
+	<string name="rampe">rampe</string>
+	<string name="grind">grind</string>
+	<string name="block">block</string>
 </resources>
 
