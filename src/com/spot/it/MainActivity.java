@@ -5,12 +5,12 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -27,20 +27,7 @@ public class MainActivity extends Activity implements LocationListener {
 		setContentView(R.layout.activity_main);
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
 				.getMap();
-		/*Marker hamburg = map.addMarker(new MarkerOptions().position(HAMBURG)
-				.title("Hamburg"));
-		Marker kiel = map.addMarker(new MarkerOptions()
-				.position(KIEL)
-				.title("Kiel")
-				.snippet("Kiel is cool")
-				.icon(BitmapDescriptorFactory
-						.fromResource(R.drawable.ic_launcher)));
-	*/
-		// Move the camera instantly to hamburg with a zoom of 15.
-		//map.moveCamera(CameraUpdateFactory.newLatLngZoom(HAMBURG, 15));
 
-		// Zoom in, animating the camera.
-		map.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
 		map.setMyLocationEnabled(true);
 
 		// Getting LocationManager object from System Service LOCATION_SERVICE
@@ -63,15 +50,18 @@ public class MainActivity extends Activity implements LocationListener {
 			double longitude = location.getLongitude();
 
 			// Creating a LatLng object for the current location
-			//LatLng latLng = new LatLng(latitude, longitude);
-
 			myPosition = new LatLng(latitude, longitude);
+			Log.i("my position", latitude + " " + longitude);
 
 			map.addMarker(new MarkerOptions().position(myPosition).title(
 					"Start"));
-			
+
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 15));
 		}
+
+		Marker marker = map.addMarker(new MarkerOptions()
+				.position(new LatLng(34.051795, -118.285390)).title("San Francisco")
+				.snippet("Home of krack.co"));
 	}
 
 	@Override
@@ -79,5 +69,4 @@ public class MainActivity extends Activity implements LocationListener {
 		// TODO Auto-generated method stub
 
 	}
-
 }

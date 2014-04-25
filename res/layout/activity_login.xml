@@ -4,6 +4,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
+    <TextView
+        android:id="@+id/userlabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/userlabel"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
     <EditText
         android:id="@+id/username"
         android:layout_width="match_parent"
@@ -13,7 +20,12 @@
 
         <requestFocus />
     </EditText>
-
+    <TextView
+        android:id="@+id/passlabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/passlabel"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
     <EditText
         android:id="@+id/password"
         android:layout_width="match_parent"

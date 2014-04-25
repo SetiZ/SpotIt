@@ -1,6 +1,7 @@
 package com.spot.it;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -32,6 +33,13 @@ public class LogInActivity extends Activity {
 
 			@Override
 			public void onClick(View v) {
+				// Set up a progress dialog
+				final ProgressDialog dlg = new ProgressDialog(
+						LogInActivity.this);
+				dlg.setTitle("Please wait.");
+				dlg.setMessage("Logging in...");
+				dlg.show();
+				// Call the Parse login method
 				ParseUser.logInInBackground(username.getText().toString(),
 						password.getText().toString(), new LogInCallback() {
 
