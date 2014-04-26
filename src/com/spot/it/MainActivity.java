@@ -1,5 +1,6 @@
 package com.spot.it;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -8,6 +9,9 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -15,6 +19,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.FindCallback;
@@ -35,6 +40,10 @@ public class MainActivity extends Activity implements LocationListener,
 		setContentView(R.layout.activity_main);
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
 				.getMap();
+
+		CheckBox grind = (CheckBox) findViewById(R.id.grind);
+		CheckBox rampe = (CheckBox) findViewById(R.id.rampe);
+		CheckBox block = (CheckBox) findViewById(R.id.block);
 
 		map.setMyLocationEnabled(true);
 
@@ -61,32 +70,92 @@ public class MainActivity extends Activity implements LocationListener,
 			myPosition = new LatLng(latitude, longitude);
 			Log.i("my position", latitude + " " + longitude);
 
-			map.addMarker(new MarkerOptions().position(myPosition).title(
-					"Start"));
+			map.addMarker(new MarkerOptions()
+					.position(myPosition)
+					.title("Start")
+					.icon(BitmapDescriptorFactory
+							.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
 
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 15));
+
+			final ParseGeoPoint userLocation = new ParseGeoPoint(
+					myPosition.latitude, myPosition.longitude);
+
+			final ArrayList<String> filters = new ArrayList<String>();
+
+			grind.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView,
+						boolean isChecked) {
+					if (isChecked) {
+						filters.add("grind");
+					} else {
+						filters.remove("grind");
+					}
+					doQuery(userLocation, filters);
+				}
+			});
+
+			rampe.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView,
+						boolean isChecked) {
+					if (isChecked) {
+						filters.add("rampe");
+					} else {
+						filters.remove("rampe");
+					}
+					doQuery(userLocation, filters);
+				}
+			});
+
+			block.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView,
+						boolean isChecked) {
+					if (isChecked) {
+						filters.add("block");
+					} else {
+						filters.remove("block");
+					}
+					doQuery(userLocation, filters);
+				}
+			});
+
+			// krack.co marker :)
+			map.addMarker(new MarkerOptions()
+					.position(new LatLng(34.051795, -118.285390))
+					.title("San Francisco").snippet("Home of krack.co"));
+
+			doQuery(userLocation, filters);
 		}
 
-		ParseGeoPoint userLocation = new ParseGeoPoint(myPosition.latitude,
-				myPosition.longitude);
+	}
+
+	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
+
+		map.clear();
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
 		query.whereNear("position", userLocation);
 		query.whereWithinRadians("position", userLocation, 100);
+		query.whereContainedIn("type", filters);
 		query.setLimit(10);
 		query.findInBackground(new FindCallback<ParseObject>() {
 			public void done(List<ParseObject> spotslist, ParseException e) {
-				LatLng test1;
+				LatLng marker;
 				if (e == null) {
 					Log.d("score", "Retrieved " + spotslist.size() + " spots");
 
 					for (ParseObject spot : spotslist) {
-						
-						test1 = new LatLng(spot
-								.getParseGeoPoint("position").getLatitude(),
-								spot.getParseGeoPoint("position")
-										.getLongitude());
-						map.addMarker(new MarkerOptions().position(test1)
+
+						marker = new LatLng(spot.getParseGeoPoint("position")
+								.getLatitude(), spot.getParseGeoPoint(
+								"position").getLongitude());
+						map.addMarker(new MarkerOptions().position(marker)
 								.title(spot.getString("name"))
 								.snippet(spot.getString("type")));
 					}
@@ -96,10 +165,6 @@ public class MainActivity extends Activity implements LocationListener,
 				}
 			}
 		});
-
-		map.addMarker(new MarkerOptions()
-				.position(new LatLng(34.051795, -118.285390))
-				.title("San Francisco").snippet("Home of krack.co"));
 	}
 
 	@Override
