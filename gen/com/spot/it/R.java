@@ -1228,6 +1228,7 @@ containing a value of this type.
         public static final int showHome=0x7f060008;
         public static final int showTitle=0x7f06000a;
         public static final int split_action_bar=0x7f060021;
+        public static final int spotsView=0x7f060048;
         public static final int submit_area=0x7f06003c;
         public static final int tabMode=0x7f060006;
         public static final int terrain=0x7f060003;
