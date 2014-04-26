@@ -1,9 +1,13 @@
 package com.spot.it;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -21,6 +25,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.FindCallback;
 import com.parse.ParseException;
@@ -33,6 +38,7 @@ public class MainActivity extends Activity implements LocationListener,
 		GooglePlayServicesClient.OnConnectionFailedListener {
 	private GoogleMap map;
 	LatLng myPosition;
+	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,13 +76,14 @@ public class MainActivity extends Activity implements LocationListener,
 			myPosition = new LatLng(latitude, longitude);
 			Log.i("my position", latitude + " " + longitude);
 
+			// my position
 			map.addMarker(new MarkerOptions()
 					.position(myPosition)
 					.title("Start")
 					.icon(BitmapDescriptorFactory
-							.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+							.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 
-			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 15));
+			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
 
 			final ParseGeoPoint userLocation = new ParseGeoPoint(
 					myPosition.latitude, myPosition.longitude);
@@ -128,7 +135,10 @@ public class MainActivity extends Activity implements LocationListener,
 			// krack.co marker :)
 			map.addMarker(new MarkerOptions()
 					.position(new LatLng(34.051795, -118.285390))
-					.title("San Francisco").snippet("Home of krack.co"));
+					.title("San Francisco")
+					.snippet("Home of krack.co")
+					.icon(BitmapDescriptorFactory
+							.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
 
 			doQuery(userLocation, filters);
 		}
@@ -137,27 +147,37 @@ public class MainActivity extends Activity implements LocationListener,
 
 	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
 
-		map.clear();
+		// map.clear();
+
+		cleanUpMarkers();
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
 		query.whereNear("position", userLocation);
 		query.whereWithinRadians("position", userLocation, 100);
 		query.whereContainedIn("type", filters);
 		query.setLimit(10);
+
+		// Set up a progress dialog
+		final ProgressDialog dlg = new ProgressDialog(MainActivity.this);
+		dlg.setTitle("Please wait.");
+		dlg.setMessage("Looking around...");
+		dlg.show();
 		query.findInBackground(new FindCallback<ParseObject>() {
 			public void done(List<ParseObject> spotslist, ParseException e) {
 				LatLng marker;
+				Marker mark;
 				if (e == null) {
 					Log.d("score", "Retrieved " + spotslist.size() + " spots");
-
+					dlg.hide();
 					for (ParseObject spot : spotslist) {
-
 						marker = new LatLng(spot.getParseGeoPoint("position")
 								.getLatitude(), spot.getParseGeoPoint(
 								"position").getLongitude());
-						map.addMarker(new MarkerOptions().position(marker)
-								.title(spot.getString("name"))
+						mark = map.addMarker(new MarkerOptions()
+								.position(marker).title(spot.getString("name"))
 								.snippet(spot.getString("type")));
+
+						mapMarkers.put(spot.getObjectId(), mark);
 					}
 
 				} else {
@@ -165,6 +185,18 @@ public class MainActivity extends Activity implements LocationListener,
 				}
 			}
 		});
+	}
+
+	/*
+	 * Helper method to clean up old markers
+	 */
+	private void cleanUpMarkers() {
+		for (String objId : new HashSet<String>(mapMarkers.keySet())) {
+			Marker marker = mapMarkers.get(objId);
+			marker.remove();
+			mapMarkers.get(objId).remove();
+			mapMarkers.remove(objId);
+		}
 	}
 
 	@Override
