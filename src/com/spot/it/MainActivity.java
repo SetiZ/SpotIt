@@ -67,10 +67,12 @@ public class MainActivity extends Activity implements LocationListener,
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 15));
 		}
 
-		ParseGeoPoint userLocation = new ParseGeoPoint(myPosition.latitude, myPosition.longitude);
+		ParseGeoPoint userLocation = new ParseGeoPoint(myPosition.latitude,
+				myPosition.longitude);
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
 		query.whereNear("position", userLocation);
+		query.whereWithinRadians("position", userLocation, 100);
 		query.setLimit(10);
 		query.findInBackground(new FindCallback<ParseObject>() {
 			public void done(List<ParseObject> spotslist, ParseException e) {
@@ -78,14 +80,17 @@ public class MainActivity extends Activity implements LocationListener,
 				if (e == null) {
 					Log.d("score", "Retrieved " + spotslist.size() + " spots");
 
-					test1 = new LatLng(spotslist.get(0)
-							.getParseGeoPoint("position").getLatitude(),
-							spotslist.get(0).getParseGeoPoint("position")
-									.getLongitude());
+					for (ParseObject spot : spotslist) {
+						
+						test1 = new LatLng(spot
+								.getParseGeoPoint("position").getLatitude(),
+								spot.getParseGeoPoint("position")
+										.getLongitude());
+						map.addMarker(new MarkerOptions().position(test1)
+								.title(spot.getString("name"))
+								.snippet(spot.getString("type")));
+					}
 
-					map.addMarker(new MarkerOptions().position(test1)
-							.title(spotslist.get(0).getString("name"))
-							.snippet("Home of krack.co"));
 				} else {
 					Log.d("score", "Error: " + e.getMessage());
 				}
