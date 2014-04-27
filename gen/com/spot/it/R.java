@@ -1234,6 +1234,7 @@ containing a value of this type.
         public static final int terrain=0x7f060003;
         public static final int title=0x7f06002e;
         public static final int top_action_bar=0x7f060023;
+        public static final int type=0x7f060049;
         public static final int up=0x7f060024;
         public static final int useLogo=0x7f060007;
         public static final int userlabel=0x7f06003f;
@@ -1292,7 +1293,8 @@ containing a value of this type.
         public static final int abc_search_view=0x7f030016;
         public static final int activity_login=0x7f030017;
         public static final int activity_main=0x7f030018;
-        public static final int support_simple_spinner_dropdown_item=0x7f030019;
+        public static final int spots_item=0x7f030019;
+        public static final int support_simple_spinner_dropdown_item=0x7f03001a;
     }
     public static final class string {
         /**  Content description for the action bar "home" affordance. [CHAR LIMIT=NONE] 

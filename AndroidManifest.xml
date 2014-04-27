@@ -56,10 +56,11 @@
         </activity>
 
         <uses-library android:name="com.google.android.maps" />
-
+        <!-- debug api key -->
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyDQ7OVckJcEyA53VbBgKAOXwSRJK1p1RoI" />
+        <!-- release api key -->
         <!--
              <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
