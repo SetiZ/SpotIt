@@ -17,8 +17,6 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -33,9 +31,7 @@ import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
-public class MainActivity extends Activity implements LocationListener,
-		GooglePlayServicesClient.ConnectionCallbacks,
-		GooglePlayServicesClient.OnConnectionFailedListener {
+public class MainActivity extends Activity implements LocationListener {
 	private GoogleMap map;
 	LatLng myPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
@@ -146,9 +142,6 @@ public class MainActivity extends Activity implements LocationListener,
 	}
 
 	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
-
-		// map.clear();
-
 		cleanUpMarkers();
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
@@ -179,7 +172,6 @@ public class MainActivity extends Activity implements LocationListener,
 
 						mapMarkers.put(spot.getObjectId(), mark);
 					}
-
 				} else {
 					Log.d("score", "Error: " + e.getMessage());
 				}
@@ -201,24 +193,6 @@ public class MainActivity extends Activity implements LocationListener,
 
 	@Override
 	public void onLocationChanged(Location arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void onConnected(Bundle arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void onDisconnected() {
 		// TODO Auto-generated method stub
 
 	}
