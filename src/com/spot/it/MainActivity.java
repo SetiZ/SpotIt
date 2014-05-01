@@ -8,14 +8,19 @@ import java.util.Map;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.app.SearchManager;
+import android.content.Context;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.SearchView;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -195,5 +200,21 @@ public class MainActivity extends Activity implements LocationListener {
 	public void onLocationChanged(Location arg0) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu items for use in the action bar
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main_actions, menu);
+		// Associate searchable configuration with the SearchView
+	    SearchManager searchManager =
+	           (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+	    SearchView searchView =
+	            (SearchView) menu.findItem(R.id.action_search).getActionView();
+	    searchView.setSearchableInfo(
+	            searchManager.getSearchableInfo(getComponentName()));
+
+	    return true;
 	}
 }
