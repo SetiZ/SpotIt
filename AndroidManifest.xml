@@ -45,6 +45,16 @@
             android:screenOrientation="portrait" >
         </activity>
         <activity
+            android:name="com.spot.it.SignUpActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="com.spot.it.IntroActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
             android:name="com.spot.it.SpotActivity"
             android:label="@string/app_name"
             android:noHistory="true" >

@@ -4,9 +4,14 @@
     <string name="app_name">Spot It</string>
     <string name="userlabel">Username</string>
     <string name="passlabel">Password</string>
+    <string name="passagainlabel">Password Again</string>
 	<string name="login_go">Go</string>
 	<string name="rampe">rampe</string>
 	<string name="grind">grind</string>
 	<string name="block">block</string>
+	<string name="sign_in">Sign In with your account</string>
+	<string name="twitter">Sign In with Twitter</string>
+	<string name="sign_up">Sign Up</string>
+	<string name="or">Or</string>
 </resources>
 

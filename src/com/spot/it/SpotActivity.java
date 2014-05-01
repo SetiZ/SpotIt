@@ -21,7 +21,7 @@ public class SpotActivity extends Activity {
 			startActivity(new Intent(this, MainActivity.class));
 		} else {
 			// Start and intent for the logged out activity
-			startActivity(new Intent(this, LogInActivity.class));
+			startActivity(new Intent(this, IntroActivity.class));
 		}
 	}
 }
