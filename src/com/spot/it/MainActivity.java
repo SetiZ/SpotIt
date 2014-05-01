@@ -7,9 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
+import android.app.LoaderManager.LoaderCallbacks;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
-import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -17,12 +21,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.SearchView;
 
 import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -36,7 +41,8 @@ import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
-public class MainActivity extends Activity implements LocationListener {
+public class MainActivity extends Activity implements LocationListener,
+		LoaderCallbacks<Cursor> {
 	private GoogleMap map;
 	LatLng myPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
@@ -141,7 +147,7 @@ public class MainActivity extends Activity implements LocationListener {
 					.icon(BitmapDescriptorFactory
 							.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
 
-			doQuery(userLocation, filters);
+			// doQuery(userLocation, filters);
 		}
 
 	}
@@ -182,6 +188,7 @@ public class MainActivity extends Activity implements LocationListener {
 				}
 			}
 		});
+		handleIntent(getIntent());
 	}
 
 	/*
@@ -202,19 +209,101 @@ public class MainActivity extends Activity implements LocationListener {
 
 	}
 
+	private void handleIntent(Intent intent) {
+		if (intent.getAction().equals(Intent.ACTION_SEARCH)) {
+			doSearch(intent.getStringExtra(SearchManager.QUERY));
+		} else if (intent.getAction().equals(Intent.ACTION_VIEW)) {
+			getPlace(intent.getStringExtra(SearchManager.EXTRA_DATA_KEY));
+		}
+	}
+
+	@Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		setIntent(intent);
+		handleIntent(intent);
+	}
+
+	private void doSearch(String query) {
+		Bundle data = new Bundle();
+		data.putString("query", query);
+		Log.i("data", "" + data);
+		// getLoaderManager().restartLoader(0, data, this);
+	}
+
+	private void getPlace(String query) {
+		Bundle data = new Bundle();
+		data.putString("query", query);
+		Log.i("data", "" + data);
+		// getLoaderManager().restartLoader(1, data, this);
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu items for use in the action bar
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main_actions, menu);
 		// Associate searchable configuration with the SearchView
-	    SearchManager searchManager =
-	           (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-	    SearchView searchView =
-	            (SearchView) menu.findItem(R.id.action_search).getActionView();
-	    searchView.setSearchableInfo(
-	            searchManager.getSearchableInfo(getComponentName()));
+		/*
+		 * SearchManager searchManager = (SearchManager)
+		 * getSystemService(Context.SEARCH_SERVICE); SearchView searchView =
+		 * (SearchView) menu.findItem(R.id.action_search).getActionView();
+		 * searchView.setSearchableInfo(
+		 * searchManager.getSearchableInfo(getComponentName()));
+		 */
+		return true;
+	}
 
-	    return true;
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.action_search:
+			onSearchRequested();
+			break;
+		}
+		return super.onMenuItemSelected(featureId, item);
+	}
+
+	@Override
+	public Loader<Cursor> onCreateLoader(int arg0, Bundle query) {
+		CursorLoader cLoader = null;
+		if (arg0 == 0)
+			cLoader = new CursorLoader(getBaseContext(),
+					PlaceProvider.SEARCH_URI, null, null,
+					new String[] { query.getString("query") }, null);
+		else if (arg0 == 1)
+			cLoader = new CursorLoader(getBaseContext(),
+					PlaceProvider.DETAILS_URI, null, null,
+					new String[] { query.getString("query") }, null);
+		return cLoader;
+	}
+
+	@Override
+	public void onLoadFinished(Loader<Cursor> arg0, Cursor c) {
+		showLocations(c);
+	}
+
+	@Override
+	public void onLoaderReset(Loader<Cursor> arg0) {
+		// TODO Auto-generated method stub
+	}
+
+	private void showLocations(Cursor c) {
+		MarkerOptions markerOptions = null;
+		LatLng position = null;
+		map.clear();
+		while (c.moveToNext()) {
+			markerOptions = new MarkerOptions();
+			position = new LatLng(Double.parseDouble(c.getString(1)),
+					Double.parseDouble(c.getString(2)));
+			markerOptions.position(position);
+			markerOptions.title(c.getString(0));
+			map.addMarker(markerOptions);
+		}
+		if (position != null) {
+			CameraUpdate cameraPosition = CameraUpdateFactory
+					.newLatLng(position);
+			map.animateCamera(cameraPosition);
+		}
 	}
 }
