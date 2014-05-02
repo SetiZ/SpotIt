@@ -9,6 +9,7 @@ import java.util.Map;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
+import android.app.SearchableInfo;
 import android.content.Context;
 import android.location.Criteria;
 import android.location.Location;
@@ -17,6 +18,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
@@ -36,10 +38,12 @@ import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
-public class MainActivity extends Activity implements LocationListener {
+public class MainActivity extends Activity implements LocationListener,
+		SearchView.OnQueryTextListener {
 	private GoogleMap map;
 	LatLng myPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
+	private SearchView searchView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -208,13 +212,57 @@ public class MainActivity extends Activity implements LocationListener {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main_actions, menu);
 		// Associate searchable configuration with the SearchView
-	    SearchManager searchManager =
-	           (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-	    SearchView searchView =
-	            (SearchView) menu.findItem(R.id.action_search).getActionView();
-	    searchView.setSearchableInfo(
-	            searchManager.getSearchableInfo(getComponentName()));
+		MenuItem searchItem = menu.findItem(R.id.action_search);
+		searchView = (SearchView) searchItem.getActionView();
+		setupSearchView(searchItem);
 
-	    return true;
+		return true;
+	}
+
+	private void setupSearchView(MenuItem searchItem) {
+
+		if (isAlwaysExpanded()) {
+			searchView.setIconifiedByDefault(false);
+		} else {
+			searchItem.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM
+					| MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+		}
+
+		SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+		if (searchManager != null) {
+			List<SearchableInfo> searchables = searchManager
+					.getSearchablesInGlobalSearch();
+
+			SearchableInfo info = searchManager
+					.getSearchableInfo(getComponentName());
+			for (SearchableInfo inf : searchables) {
+				if (inf.getSuggestAuthority() != null
+						&& inf.getSuggestAuthority().startsWith("applications")) {
+					info = inf;
+				}
+			}
+			searchView.setSearchableInfo(info);
+		}
+
+		searchView.setOnQueryTextListener(this);
+	}
+
+	public boolean onQueryTextChange(String newText) {
+		Log.i("Query = ", newText);
+		return false;
+	}
+
+	public boolean onQueryTextSubmit(String query) {
+		Log.i("Query = ", query + " : submitted");
+		return false;
+	}
+
+	public boolean onClose() {
+		Log.i("Closed!", "Closed!");
+		return false;
+	}
+
+	protected boolean isAlwaysExpanded() {
+		return false;
 	}
 }

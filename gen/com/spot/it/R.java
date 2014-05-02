@@ -1449,6 +1449,7 @@ containing a value of this type.
         public static final int passlabel=0x7f080029;
         public static final int rampe=0x7f08002c;
         public static final int search_hint=0x7f080034;
+        public static final int search_settings=0x7f080035;
         public static final int sign_in=0x7f08002f;
         public static final int sign_up=0x7f080031;
         public static final int twitter=0x7f080030;
