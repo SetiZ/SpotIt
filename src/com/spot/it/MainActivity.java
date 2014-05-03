@@ -213,21 +213,17 @@ public class MainActivity extends Activity implements LocationListener,
 		inflater.inflate(R.menu.main_actions, menu);
 		// Associate searchable configuration with the SearchView
 		MenuItem searchItem = menu.findItem(R.id.action_search);
+		// SearchManager searchManager = (SearchManager)
+		// getSystemService(Context.SEARCH_SERVICE);
 		searchView = (SearchView) searchItem.getActionView();
+		// Assumes current activity is the searchable activity
 		setupSearchView(searchItem);
 
 		return true;
 	}
 
 	private void setupSearchView(MenuItem searchItem) {
-
-		if (isAlwaysExpanded()) {
-			searchView.setIconifiedByDefault(false);
-		} else {
-			searchItem.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM
-					| MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-		}
-
+		searchView.setIconifiedByDefault(false);
 		SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
 		if (searchManager != null) {
 			List<SearchableInfo> searchables = searchManager
