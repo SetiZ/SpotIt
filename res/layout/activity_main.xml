@@ -11,8 +11,6 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:hint="@string/search_hint"
-        android:imeActionLabel="@android:string/search_go"
-        android:imeOptions="actionSearch"
         android:inputType="text"
         android:singleLine="true" >
     </AutoCompleteTextView>

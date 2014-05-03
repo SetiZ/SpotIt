@@ -37,6 +37,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationListener;
@@ -54,7 +55,7 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
 public class MainActivity extends Activity implements LocationListener,
-		OnItemClickListener {
+		OnItemClickListener, OnEditorActionListener {
 
 	private static final String LOG_TAG = "";
 
@@ -75,19 +76,10 @@ public class MainActivity extends Activity implements LocationListener,
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
 				.getMap();
 
-		AutoCompleteTextView autoCompView = (AutoCompleteTextView) findViewById(R.id.search);
+		final AutoCompleteTextView autoCompView = (AutoCompleteTextView) findViewById(R.id.search);
 		autoCompView.setAdapter(new PlacesAutoCompleteAdapter(this,
 				R.layout.list_item));
-		autoCompView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-		    @Override
-		    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-		        if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-		            
-		            return true;
-		        }
-		        return false;
-		    }
-		});
+		autoCompView.setOnEditorActionListener(this);
 		autoCompView.setOnItemClickListener(this);
 
 		CheckBox grind = (CheckBox) findViewById(R.id.grind);
@@ -188,10 +180,20 @@ public class MainActivity extends Activity implements LocationListener,
 
 	}
 
+	@Override
+	public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+		Log.i("button", "haha");
+		if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+			Log.i("button", "appui");
+			return true;
+		}
+		return false;
+	}
+
 	public void onItemClick(AdapterView<?> adapterView, View view,
 			int position, long id) {
 		String str = (String) adapterView.getItemAtPosition(position);
-		map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
+		//map.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 13));
 		Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
 	}
 
@@ -329,7 +331,7 @@ public class MainActivity extends Activity implements LocationListener,
 					if (constraint != null) {
 						// Retrieve the autocomplete results.
 						resultList = autocomplete(constraint.toString());
-
+						Log.i("results","" +resultList);
 						// Assign the data to the FilterResults
 						filterResults.values = resultList;
 						filterResults.count = resultList.size();
@@ -350,4 +352,5 @@ public class MainActivity extends Activity implements LocationListener,
 			return filter;
 		}
 	}
+
 }
