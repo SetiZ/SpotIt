@@ -5,6 +5,18 @@
     android:orientation="vertical"
     tools:context=".MainActivity" >
 
+    <AutoCompleteTextView
+        android:id="@+id/search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/search_hint"
+        android:imeActionLabel="@android:string/search_go"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:singleLine="true" >
+    </AutoCompleteTextView>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >

@@ -1,28 +1,43 @@
 package com.spot.it;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.app.SearchManager;
-import android.app.SearchableInfo;
 import android.content.Context;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.SearchView;
+import android.widget.Filter;
+import android.widget.Filterable;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -39,11 +54,19 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
 public class MainActivity extends Activity implements LocationListener,
-		SearchView.OnQueryTextListener {
+		OnItemClickListener {
+
+	private static final String LOG_TAG = "";
+
+	private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
+	private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
+	private static final String OUT_JSON = "/json";
+
+	private static final String API_KEY = "AIzaSyA8byrjC61ok3419M13-Icl1nt-uuo8lNw";
+
 	private GoogleMap map;
 	LatLng myPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
-	private SearchView searchView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +74,21 @@ public class MainActivity extends Activity implements LocationListener,
 		setContentView(R.layout.activity_main);
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map))
 				.getMap();
+
+		AutoCompleteTextView autoCompView = (AutoCompleteTextView) findViewById(R.id.search);
+		autoCompView.setAdapter(new PlacesAutoCompleteAdapter(this,
+				R.layout.list_item));
+		autoCompView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+		    @Override
+		    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+		        if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+		            
+		            return true;
+		        }
+		        return false;
+		    }
+		});
+		autoCompView.setOnItemClickListener(this);
 
 		CheckBox grind = (CheckBox) findViewById(R.id.grind);
 		CheckBox rampe = (CheckBox) findViewById(R.id.rampe);
@@ -150,6 +188,13 @@ public class MainActivity extends Activity implements LocationListener,
 
 	}
 
+	public void onItemClick(AdapterView<?> adapterView, View view,
+			int position, long id) {
+		String str = (String) adapterView.getItemAtPosition(position);
+		map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
+		Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
+	}
+
 	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
 		cleanUpMarkers();
 
@@ -202,63 +247,107 @@ public class MainActivity extends Activity implements LocationListener,
 
 	@Override
 	public void onLocationChanged(Location arg0) {
-		// TODO Auto-generated method stub
 
 	}
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu items for use in the action bar
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main_actions, menu);
-		// Associate searchable configuration with the SearchView
-		MenuItem searchItem = menu.findItem(R.id.action_search);
-		// SearchManager searchManager = (SearchManager)
-		// getSystemService(Context.SEARCH_SERVICE);
-		searchView = (SearchView) searchItem.getActionView();
-		// Assumes current activity is the searchable activity
-		setupSearchView(searchItem);
+	private ArrayList<String> autocomplete(String input) {
+		ArrayList<String> resultList = null;
 
-		return true;
-	}
+		HttpURLConnection conn = null;
+		StringBuilder jsonResults = new StringBuilder();
+		try {
+			StringBuilder sb = new StringBuilder(PLACES_API_BASE
+					+ TYPE_AUTOCOMPLETE + OUT_JSON);
+			sb.append("?sensor=false&key=" + API_KEY);
+			// sb.append("&components=country:uk");
+			sb.append("&input=" + URLEncoder.encode(input, "utf8"));
 
-	private void setupSearchView(MenuItem searchItem) {
-		searchView.setIconifiedByDefault(false);
-		SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-		if (searchManager != null) {
-			List<SearchableInfo> searchables = searchManager
-					.getSearchablesInGlobalSearch();
+			URL url = new URL(sb.toString());
+			conn = (HttpURLConnection) url.openConnection();
+			InputStreamReader in = new InputStreamReader(conn.getInputStream());
 
-			SearchableInfo info = searchManager
-					.getSearchableInfo(getComponentName());
-			for (SearchableInfo inf : searchables) {
-				if (inf.getSuggestAuthority() != null
-						&& inf.getSuggestAuthority().startsWith("applications")) {
-					info = inf;
-				}
+			// Load the results into a StringBuilder
+			int read;
+			char[] buff = new char[1024];
+			while ((read = in.read(buff)) != -1) {
+				jsonResults.append(buff, 0, read);
 			}
-			searchView.setSearchableInfo(info);
+		} catch (MalformedURLException e) {
+			Log.e(LOG_TAG, "Error processing Places API URL", e);
+			return resultList;
+		} catch (IOException e) {
+			Log.e(LOG_TAG, "Error connecting to Places API", e);
+			return resultList;
+		} finally {
+			if (conn != null) {
+				conn.disconnect();
+			}
 		}
 
-		searchView.setOnQueryTextListener(this);
+		try {
+			// Create a JSON object hierarchy from the results
+			JSONObject jsonObj = new JSONObject(jsonResults.toString());
+			JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
+
+			// Extract the Place descriptions from the results
+			resultList = new ArrayList<String>(predsJsonArray.length());
+			for (int i = 0; i < predsJsonArray.length(); i++) {
+				resultList.add(predsJsonArray.getJSONObject(i).getString(
+						"description"));
+			}
+		} catch (JSONException e) {
+			Log.e(LOG_TAG, "Cannot process JSON results", e);
+		}
+
+		return resultList;
 	}
 
-	public boolean onQueryTextChange(String newText) {
-		Log.i("Query = ", newText);
-		return false;
-	}
+	private class PlacesAutoCompleteAdapter extends ArrayAdapter<String>
+			implements Filterable {
+		private ArrayList<String> resultList;
 
-	public boolean onQueryTextSubmit(String query) {
-		Log.i("Query = ", query + " : submitted");
-		return false;
-	}
+		public PlacesAutoCompleteAdapter(Context context, int textViewResourceId) {
+			super(context, textViewResourceId);
+		}
 
-	public boolean onClose() {
-		Log.i("Closed!", "Closed!");
-		return false;
-	}
+		@Override
+		public int getCount() {
+			return resultList.size();
+		}
 
-	protected boolean isAlwaysExpanded() {
-		return false;
+		@Override
+		public String getItem(int index) {
+			return resultList.get(index);
+		}
+
+		@Override
+		public Filter getFilter() {
+			Filter filter = new Filter() {
+				@Override
+				protected FilterResults performFiltering(CharSequence constraint) {
+					FilterResults filterResults = new FilterResults();
+					if (constraint != null) {
+						// Retrieve the autocomplete results.
+						resultList = autocomplete(constraint.toString());
+
+						// Assign the data to the FilterResults
+						filterResults.values = resultList;
+						filterResults.count = resultList.size();
+					}
+					return filterResults;
+				}
+
+				@Override
+				protected void publishResults(CharSequence constraint,
+						FilterResults results) {
+					if (results != null && results.count > 0) {
+						notifyDataSetChanged();
+					} else {
+						notifyDataSetInvalidated();
+					}
+				}
+			};
+			return filter;
+		}
 	}
 }
