@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,6 +23,7 @@ import android.content.Context;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -38,7 +40,6 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
-import android.widget.Toast;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -61,6 +62,7 @@ public class MainActivity extends Activity implements LocationListener,
 
 	private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
 	private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
+	private static final String TYPE_DETAILS = "/details";
 	private static final String OUT_JSON = "/json";
 
 	private static final String API_KEY = "AIzaSyA8byrjC61ok3419M13-Icl1nt-uuo8lNw";
@@ -68,6 +70,8 @@ public class MainActivity extends Activity implements LocationListener,
 	private GoogleMap map;
 	LatLng myPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
+
+	ArrayList<String> referenceList = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +103,7 @@ public class MainActivity extends Activity implements LocationListener,
 
 		// Getting Current Location
 		Location location = locationManager.getLastKnownLocation(provider);
+		// Location location = map.getMyLocation();
 
 		if (location != null) {
 			// Getting latitude of the current location
@@ -117,7 +122,8 @@ public class MainActivity extends Activity implements LocationListener,
 					.title("Start")
 					.icon(BitmapDescriptorFactory
 							.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-
+			// map.animateCamera(CameraUpdateFactory.newLatLngZoom(myPosition,
+			// 13));
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
 
 			final ParseGeoPoint userLocation = new ParseGeoPoint(
@@ -193,8 +199,31 @@ public class MainActivity extends Activity implements LocationListener,
 	public void onItemClick(AdapterView<?> adapterView, View view,
 			int position, long id) {
 		String str = (String) adapterView.getItemAtPosition(position);
-		//map.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 13));
-		Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
+		Log.i("position", "" + referenceList.get(position));
+		GetPlaces task = new GetPlaces();
+		ArrayList<String> latlng = null;
+		try {
+			latlng = task.execute(referenceList.get(position)).get();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Double lat = Double.valueOf(latlng.get(0));
+		Double lng = Double.valueOf(latlng.get(1));
+		LatLng clicPosition = new LatLng(lat, lng);
+		map.animateCamera(CameraUpdateFactory.newLatLngZoom(clicPosition, 15));
+		map.addMarker(
+				new MarkerOptions()
+						.position(clicPosition)
+						.title(str)
+						.icon(BitmapDescriptorFactory
+								.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
+				.showInfoWindow();
+
+		// Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
 	}
 
 	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
@@ -252,6 +281,76 @@ public class MainActivity extends Activity implements LocationListener,
 
 	}
 
+	private class GetPlaces extends AsyncTask<String, Void, ArrayList<String>> {
+
+		@Override
+		protected ArrayList<String> doInBackground(String... input) {
+			ArrayList<String> resultList = null;
+
+			HttpURLConnection conn = null;
+			StringBuilder jsonResults = new StringBuilder();
+			try {
+				StringBuilder sb = new StringBuilder(PLACES_API_BASE
+						+ TYPE_DETAILS + OUT_JSON);
+				sb.append("?sensor=false&key=" + API_KEY);
+				sb.append("&reference=" + URLEncoder.encode(input[0], "utf8"));
+				Log.d("results", sb.toString());
+				URL url = new URL(sb.toString());
+				conn = (HttpURLConnection) url.openConnection();
+				InputStreamReader in = new InputStreamReader(
+						conn.getInputStream());
+
+				// Load the results into a StringBuilder
+				int read;
+				char[] buff = new char[1024];
+				while ((read = in.read(buff)) != -1) {
+					jsonResults.append(buff, 0, read);
+				}
+			} catch (MalformedURLException e) {
+				Log.e(LOG_TAG, "Error processing Places API URL", e);
+				return resultList;
+			} catch (IOException e) {
+				Log.e(LOG_TAG, "Error connecting to Places API", e);
+				return resultList;
+			} finally {
+				if (conn != null) {
+					conn.disconnect();
+				}
+			}
+
+			try {
+				// Create a JSON object hierarchy from the results
+				Log.d("results", jsonResults.toString());
+				JSONObject jsonObj = new JSONObject(jsonResults.toString());
+				// JSONArray predsJsonArray = jsonObj.getJSONArray("result");
+				resultList = new ArrayList<String>(2);
+				resultList.add(jsonObj.getJSONObject("result")
+						.getJSONObject("geometry").getJSONObject("location")
+						.getString("lat"));
+				resultList.add(jsonObj.getJSONObject("result")
+						.getJSONObject("geometry").getJSONObject("location")
+						.getString("lng"));
+				// Log.d("results",jsonObj.getJSONObject("result").getJSONObject("geometry").getJSONObject("location").getString("lat"));
+				// Log.d("results",jsonObj.getJSONObject("result").getJSONObject("geometry").getJSONObject("location").getString("lng"));
+				// Extract the Place descriptions from the results
+				// resultList = new ArrayList<String>(predsJsonArray.length());
+				/*
+				 * for (int i = 0; i < predsJsonArray.length(); i++) {
+				 * Log.d("results", predsJsonArray.getJSONObject(i).getString(
+				 * "description")); }
+				 */
+			} catch (JSONException e) {
+				Log.e(LOG_TAG, "Cannot process JSON results", e);
+			}
+
+			return resultList;
+		}
+
+		protected void onPostExecute(ArrayList<String> result) {
+
+		}
+	}
+
 	private ArrayList<String> autocomplete(String input) {
 		ArrayList<String> resultList = null;
 
@@ -261,9 +360,8 @@ public class MainActivity extends Activity implements LocationListener,
 			StringBuilder sb = new StringBuilder(PLACES_API_BASE
 					+ TYPE_AUTOCOMPLETE + OUT_JSON);
 			sb.append("?sensor=false&key=" + API_KEY);
-			// sb.append("&components=country:uk");
+			// sb.append("&type=geocode");
 			sb.append("&input=" + URLEncoder.encode(input, "utf8"));
-
 			URL url = new URL(sb.toString());
 			conn = (HttpURLConnection) url.openConnection();
 			InputStreamReader in = new InputStreamReader(conn.getInputStream());
@@ -293,9 +391,12 @@ public class MainActivity extends Activity implements LocationListener,
 
 			// Extract the Place descriptions from the results
 			resultList = new ArrayList<String>(predsJsonArray.length());
+			referenceList = new ArrayList<String>(predsJsonArray.length());
 			for (int i = 0; i < predsJsonArray.length(); i++) {
 				resultList.add(predsJsonArray.getJSONObject(i).getString(
 						"description"));
+				referenceList.add(predsJsonArray.getJSONObject(i).getString(
+						"reference"));
 			}
 		} catch (JSONException e) {
 			Log.e(LOG_TAG, "Cannot process JSON results", e);
@@ -331,7 +432,6 @@ public class MainActivity extends Activity implements LocationListener,
 					if (constraint != null) {
 						// Retrieve the autocomplete results.
 						resultList = autocomplete(constraint.toString());
-						Log.i("results","" +resultList);
 						// Assign the data to the FilterResults
 						filterResults.values = resultList;
 						filterResults.count = resultList.size();
