@@ -20,6 +20,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -46,6 +47,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -66,10 +69,15 @@ public class MainActivity extends Activity implements LocationListener,
 	private static final String OUT_JSON = "/json";
 
 	private static final String API_KEY = "AIzaSyA8byrjC61ok3419M13-Icl1nt-uuo8lNw";
-
+	private Circle mapCircle;
 	private GoogleMap map;
 	LatLng myPosition;
+	// position when we click
+	LatLng clicPosition;
 	private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
+	private ProgressDialog dlg;
+	private ParseGeoPoint userLocation;
+	private ArrayList<String> filters = new ArrayList<String>();
 
 	ArrayList<String> referenceList = null;
 
@@ -124,12 +132,13 @@ public class MainActivity extends Activity implements LocationListener,
 							.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 			// map.animateCamera(CameraUpdateFactory.newLatLngZoom(myPosition,
 			// 13));
+			updateCircle(myPosition);
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
 
-			final ParseGeoPoint userLocation = new ParseGeoPoint(
+			userLocation = new ParseGeoPoint(
 					myPosition.latitude, myPosition.longitude);
+			
 
-			final ArrayList<String> filters = new ArrayList<String>();
 
 			grind.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
@@ -141,7 +150,7 @@ public class MainActivity extends Activity implements LocationListener,
 					} else {
 						filters.remove("grind");
 					}
-					doQuery(userLocation, filters);
+					doQuery(filters);
 				}
 			});
 
@@ -155,7 +164,7 @@ public class MainActivity extends Activity implements LocationListener,
 					} else {
 						filters.remove("rampe");
 					}
-					doQuery(userLocation, filters);
+					doQuery(filters);
 				}
 			});
 
@@ -169,7 +178,7 @@ public class MainActivity extends Activity implements LocationListener,
 					} else {
 						filters.remove("block");
 					}
-					doQuery(userLocation, filters);
+					doQuery(filters);
 				}
 			});
 
@@ -181,7 +190,7 @@ public class MainActivity extends Activity implements LocationListener,
 					.icon(BitmapDescriptorFactory
 							.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
 
-			doQuery(userLocation, filters);
+			doQuery(filters);
 		}
 
 	}
@@ -199,7 +208,6 @@ public class MainActivity extends Activity implements LocationListener,
 	public void onItemClick(AdapterView<?> adapterView, View view,
 			int position, long id) {
 		String str = (String) adapterView.getItemAtPosition(position);
-		Log.i("position", "" + referenceList.get(position));
 		GetPlaces task = new GetPlaces();
 		ArrayList<String> latlng = null;
 		try {
@@ -214,7 +222,7 @@ public class MainActivity extends Activity implements LocationListener,
 		Double lat = Double.valueOf(latlng.get(0));
 		Double lng = Double.valueOf(latlng.get(1));
 		LatLng clicPosition = new LatLng(lat, lng);
-		map.animateCamera(CameraUpdateFactory.newLatLngZoom(clicPosition, 15));
+		map.animateCamera(CameraUpdateFactory.newLatLngZoom(clicPosition, 13));
 		map.addMarker(
 				new MarkerOptions()
 						.position(clicPosition)
@@ -222,24 +230,48 @@ public class MainActivity extends Activity implements LocationListener,
 						.icon(BitmapDescriptorFactory
 								.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
 				.showInfoWindow();
-
+		updateCircle(clicPosition);
+		updatePosition(clicPosition);
+		doQuery(filters);
 		// Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
 	}
 
-	public void doQuery(ParseGeoPoint userLocation, ArrayList<String> filters) {
+	private void updateCircle(LatLng myLatLng) {
+		if (mapCircle == null) {
+			mapCircle = map.addCircle(new CircleOptions().center(myLatLng)
+					.radius(1000));
+			int baseColor = Color.DKGRAY;
+			mapCircle.setStrokeColor(baseColor);
+			mapCircle.setStrokeWidth(2);
+			mapCircle.setFillColor(Color.argb(50, Color.red(baseColor),
+					Color.green(baseColor), Color.blue(baseColor)));
+		}
+		mapCircle.setCenter(myLatLng);
+		mapCircle.setRadius(1000); // Convert radius in feet
+									// to meters.
+	}
+	
+	private void updatePosition(LatLng myLatLng) {
+		userLocation = new ParseGeoPoint(
+				myLatLng.latitude, myLatLng.longitude);
+	}
+
+	public void doQuery(ArrayList<String> filters) {
 		cleanUpMarkers();
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
 		query.whereNear("position", userLocation);
-		query.whereWithinRadians("position", userLocation, 100);
+		query.whereWithinRadians("position", userLocation, 1000);
+		query.whereWithinKilometers("position", userLocation, 1);
 		query.whereContainedIn("type", filters);
 		query.setLimit(10);
 
 		// Set up a progress dialog
-		final ProgressDialog dlg = new ProgressDialog(MainActivity.this);
+		dlg = new ProgressDialog(MainActivity.this);
 		dlg.setTitle("Please wait.");
 		dlg.setMessage("Looking around...");
 		dlg.show();
+
 		query.findInBackground(new FindCallback<ParseObject>() {
 			public void done(List<ParseObject> spotslist, ParseException e) {
 				LatLng marker;
