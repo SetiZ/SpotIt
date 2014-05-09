@@ -78,6 +78,7 @@ public class MainActivity extends Activity implements LocationListener,
 	private ProgressDialog dlg;
 	private ParseGeoPoint userLocation;
 	private ArrayList<String> filters = new ArrayList<String>();
+	private Marker user;
 
 	ArrayList<String> referenceList = null;
 
@@ -125,20 +126,16 @@ public class MainActivity extends Activity implements LocationListener,
 			Log.i("my position", latitude + " " + longitude);
 
 			// my position
-			map.addMarker(new MarkerOptions()
+			user = map.addMarker(new MarkerOptions()
 					.position(myPosition)
 					.title("Start")
 					.icon(BitmapDescriptorFactory
 							.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-			// map.animateCamera(CameraUpdateFactory.newLatLngZoom(myPosition,
-			// 13));
 			updateCircle(myPosition);
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
 
-			userLocation = new ParseGeoPoint(
-					myPosition.latitude, myPosition.longitude);
-			
-
+			userLocation = new ParseGeoPoint(myPosition.latitude,
+					myPosition.longitude);
 
 			grind.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
@@ -190,7 +187,7 @@ public class MainActivity extends Activity implements LocationListener,
 					.icon(BitmapDescriptorFactory
 							.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
 
-			doQuery(filters);
+			// doQuery(filters);
 		}
 
 	}
@@ -213,10 +210,8 @@ public class MainActivity extends Activity implements LocationListener,
 		try {
 			latlng = task.execute(referenceList.get(position)).get();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		Double lat = Double.valueOf(latlng.get(0));
@@ -232,8 +227,8 @@ public class MainActivity extends Activity implements LocationListener,
 				.showInfoWindow();
 		updateCircle(clicPosition);
 		updatePosition(clicPosition);
-		doQuery(filters);
-		// Toast.makeText(this, str, Toast.LENGTH_SHORT).show();
+		user.remove();
+		// doQuery(filters);
 	}
 
 	private void updateCircle(LatLng myLatLng) {
@@ -250,10 +245,9 @@ public class MainActivity extends Activity implements LocationListener,
 		mapCircle.setRadius(1000); // Convert radius in feet
 									// to meters.
 	}
-	
+
 	private void updatePosition(LatLng myLatLng) {
-		userLocation = new ParseGeoPoint(
-				myLatLng.latitude, myLatLng.longitude);
+		userLocation = new ParseGeoPoint(myLatLng.latitude, myLatLng.longitude);
 	}
 
 	public void doQuery(ArrayList<String> filters) {
@@ -309,8 +303,12 @@ public class MainActivity extends Activity implements LocationListener,
 	}
 
 	@Override
-	public void onLocationChanged(Location arg0) {
-
+	public void onLocationChanged(Location location) {
+		LatLng myLatLng = new LatLng(location.getLatitude(),
+				location.getLongitude());
+		// Update map radius indicator
+		updateCircle(myLatLng);
+		updatePosition(myLatLng);
 	}
 
 	private class GetPlaces extends AsyncTask<String, Void, ArrayList<String>> {
@@ -354,7 +352,7 @@ public class MainActivity extends Activity implements LocationListener,
 				// Create a JSON object hierarchy from the results
 				Log.d("results", jsonResults.toString());
 				JSONObject jsonObj = new JSONObject(jsonResults.toString());
-				// JSONArray predsJsonArray = jsonObj.getJSONArray("result");
+
 				resultList = new ArrayList<String>(2);
 				resultList.add(jsonObj.getJSONObject("result")
 						.getJSONObject("geometry").getJSONObject("location")
@@ -362,15 +360,6 @@ public class MainActivity extends Activity implements LocationListener,
 				resultList.add(jsonObj.getJSONObject("result")
 						.getJSONObject("geometry").getJSONObject("location")
 						.getString("lng"));
-				// Log.d("results",jsonObj.getJSONObject("result").getJSONObject("geometry").getJSONObject("location").getString("lat"));
-				// Log.d("results",jsonObj.getJSONObject("result").getJSONObject("geometry").getJSONObject("location").getString("lng"));
-				// Extract the Place descriptions from the results
-				// resultList = new ArrayList<String>(predsJsonArray.length());
-				/*
-				 * for (int i = 0; i < predsJsonArray.length(); i++) {
-				 * Log.d("results", predsJsonArray.getJSONObject(i).getString(
-				 * "description")); }
-				 */
 			} catch (JSONException e) {
 				Log.e(LOG_TAG, "Cannot process JSON results", e);
 			}

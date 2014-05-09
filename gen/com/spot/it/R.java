@@ -1209,6 +1209,7 @@ containing a value of this type.
         public static final int normal=0x7f060001;
         public static final int or=0x7f060041;
         public static final int password=0x7f060044;
+        public static final int passwordagain=0x7f06004c;
         public static final int progress_circular=0x7f06001b;
         public static final int progress_horizontal=0x7f06001c;
         public static final int radio=0x7f060032;
@@ -1238,7 +1239,7 @@ containing a value of this type.
         public static final int title=0x7f06002e;
         public static final int top_action_bar=0x7f060023;
         public static final int twitterButton=0x7f060040;
-        public static final int type=0x7f06004c;
+        public static final int type=0x7f06004d;
         public static final int up=0x7f060024;
         public static final int useLogo=0x7f060007;
         public static final int username=0x7f060043;

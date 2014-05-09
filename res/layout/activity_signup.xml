@@ -21,14 +21,12 @@
         android:hint="@string/passlabel"
         android:inputType="textPassword" />
 
-    <!--
-         <EditText
+    <EditText
         android:id="@+id/passwordagain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/passagainlabel"
         android:inputType="textPassword" />
-    -->
 
     <Button
         android:id="@+id/logingo"

@@ -19,8 +19,7 @@ public class SignUpActivity extends Activity {
 	// UI references.
 	private EditText usernameView;
 	private EditText passwordView;
-
-	// private EditText passwordAgainView;
+	private EditText passwordAgainView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,12 +30,20 @@ public class SignUpActivity extends Activity {
 		// Set up the signup form.
 		usernameView = (EditText) findViewById(R.id.username);
 		passwordView = (EditText) findViewById(R.id.password);
-		// passwordAgainView = (EditText) findViewById(R.id.passwordagain);
+		passwordAgainView = (EditText) findViewById(R.id.passwordagain);
 
 		// Set up the submit button click handler
 		findViewById(R.id.logingo).setOnClickListener(
 				new View.OnClickListener() {
 					public void onClick(View view) {
+
+						if (!isMatching(passwordView, passwordAgainView)) {
+							Toast.makeText(SignUpActivity.this,
+									"password missmatch", Toast.LENGTH_LONG)
+									.show();
+							return;
+						}
+
 						// Set up a progress dialog
 						final ProgressDialog dlg = new ProgressDialog(
 								SignUpActivity.this);
@@ -78,9 +85,13 @@ public class SignUpActivity extends Activity {
 	 * private boolean isEmpty(EditText etText) { if
 	 * (etText.getText().toString().trim().length() > 0) { return false; } else
 	 * { return true; } }
-	 * 
-	 * private boolean isMatching(EditText etText1, EditText etText2) { if
-	 * (etText1.getText().toString().equals(etText2.getText().toString())) {
-	 * return true; } else { return false; } }
 	 */
+	private boolean isMatching(EditText etText1, EditText etText2) {
+		if (etText1.getText().toString().equals(etText2.getText().toString())) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 }
