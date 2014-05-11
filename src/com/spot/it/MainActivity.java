@@ -47,6 +47,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -79,6 +80,7 @@ public class MainActivity extends Activity implements LocationListener,
 	private ParseGeoPoint userLocation;
 	private ArrayList<String> filters = new ArrayList<String>();
 	private Marker user;
+	private Marker baryMarker;
 
 	ArrayList<String> referenceList = null;
 
@@ -133,6 +135,18 @@ public class MainActivity extends Activity implements LocationListener,
 							.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 			updateCircle(myPosition);
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPosition, 13));
+
+			map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+				@Override
+				public void onCameraChange(CameraPosition cameraPosition) {
+					Log.i("camera", "zoom: " + cameraPosition.zoom);
+					for (String objId : new HashSet<String>(mapMarkers.keySet())) {
+						Marker marker = mapMarkers.get(objId);
+						marker.setVisible(cameraPosition.zoom > 11);
+					}
+					;
+				}
+			});
 
 			userLocation = new ParseGeoPoint(myPosition.latitude,
 					myPosition.longitude);
@@ -255,8 +269,8 @@ public class MainActivity extends Activity implements LocationListener,
 
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("spots");
 		query.whereNear("position", userLocation);
-		query.whereWithinRadians("position", userLocation, 1000);
-		query.whereWithinKilometers("position", userLocation, 1);
+		// query.whereWithinRadians("position", userLocation, 1000);
+		// query.whereWithinKilometers("position", userLocation, 1);
 		query.whereContainedIn("type", filters);
 		query.setLimit(10);
 
@@ -282,12 +296,20 @@ public class MainActivity extends Activity implements LocationListener,
 								.snippet(spot.getString("type")));
 
 						mapMarkers.put(spot.getObjectId(), mark);
+						// remove barycenter marker before redrawing it
+						try {
+							baryMarker.remove();
+						} catch (NullPointerException ex) {
+
+						}
+						barycentre();
 					}
 				} else {
 					Log.d("score", "Error: " + e.getMessage());
 				}
 			}
 		});
+
 	}
 
 	/*
@@ -300,6 +322,28 @@ public class MainActivity extends Activity implements LocationListener,
 			mapMarkers.get(objId).remove();
 			mapMarkers.remove(objId);
 		}
+	}
+
+	private void barycentre() {
+		Double lattitudes = 0.0;
+		Double longitudes = 0.0;
+		int size = 0;
+		for (String objId : new HashSet<String>(mapMarkers.keySet())) {
+			lattitudes = lattitudes
+					+ mapMarkers.get(objId).getPosition().latitude;
+			longitudes = longitudes
+					+ mapMarkers.get(objId).getPosition().longitude;
+			size++;
+		}
+		Log.i("lattitudes", "" + lattitudes);
+		Log.i("longitudes", "" + longitudes);
+		Log.i("size", "" + size);
+		LatLng bary = new LatLng(lattitudes / size, longitudes / size);
+		baryMarker = map.addMarker(new MarkerOptions()
+				.position(bary)
+				.title("" + size)
+				.icon(BitmapDescriptorFactory
+						.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
 	}
 
 	@Override
